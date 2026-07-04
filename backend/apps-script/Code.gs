@@ -17,7 +17,7 @@
  *  5. Copia la URL /exec resultante y pégala en apps/interview-app/src/lib/config.js
  */
 
-const SHEET_ID = "PEGA_AQUI_EL_ID_DE_TU_GOOGLE_SHEET";
+const SHEET_ID = "1wamHIKNCYcHGxmBtTo7p2uhbGBPi_G2fCqYX8KEJtk8";
 const SHEET_NAME = "Interviews";
 const META_SHEET_NAME = "Metadata";
 
