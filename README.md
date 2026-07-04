@@ -12,16 +12,25 @@ Paso 2: validación de tres hipótesis con tarjetas + preguntas comparativas).
 ```
 /
 ├── apps/
-│   └── interview-app/       # Frontend: Vite + JS vanilla (esto es lo que se despliega)
+│   ├── interview-app/        # Frontend: Vite + JS vanilla (app de entrevistas)
+│   │   ├── index.html
+│   │   └── src/
+│   │       ├── main.js       # Controlador: enruta pantallas, guarda, navega
+│   │       ├── style.css     # Estilo neutro (blanco/negro/gris), tipografía grande
+│   │       ├── data/flow.js  # TODAS las preguntas, tarjetas y preguntas comparativas
+│   │       └── lib/
+│   │           ├── store.js  # Autosave en localStorage + recuperación
+│   │           ├── api.js    # Llamadas al backend
+│   │           └── config.js # URL del backend (editar tras desplegar Apps Script)
+│   │
+│   └── analytics-dashboard/  # Frontend: panel de solo lectura con la analítica
 │       ├── index.html
 │       └── src/
-│           ├── main.js       # Controlador: enruta pantallas, guarda, navega
-│           ├── style.css     # Estilo neutro (blanco/negro/gris), tipografía grande
-│           ├── data/flow.js  # TODAS las preguntas, tarjetas y preguntas comparativas
+│           ├── main.js       # Hipótesis por encuesta, ranking, matriz, wordcloud
+│           ├── style.css
 │           └── lib/
-│               ├── store.js  # Autosave en localStorage + recuperación
-│               ├── api.js    # Llamadas al backend
-│               └── config.js # URL del backend (editar tras desplegar Apps Script)
+│               ├── api.js    # Llama a action=analytics
+│               └── config.js # Misma URL del backend
 │
 ├── backend/
 │   └── apps-script/
@@ -47,6 +56,15 @@ Paso 2: validación de tres hipótesis con tarjetas + preguntas comparativas).
 Cada respuesta se autoguarda en el dispositivo (`localStorage`) apenas se escribe,
 así que si el navegador se cierra a mitad de entrevista, al volver a abrir la
 app se recupera exactamente donde se quedó.
+
+## Analítica
+
+`apps/analytics-dashboard` es un panel de solo lectura que consume
+`action=analytics` del backend y muestra: hipótesis ganadora y score por
+encuesta, resultados globales por hipótesis, ranking (score promedio,
+desviación estándar y % de encuestas válidas ≥65%), la matriz de resultados
+por pregunta y un wordcloud por hipótesis ganadora (a partir de la columna
+manual `key_terms` en la hoja `Interviews`). Ver `docs/DEPLOY.md` sección 7.
 
 ## Próximos pasos
 

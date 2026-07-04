@@ -121,3 +121,24 @@ de tu Google Sheet. Las columnas se crean solas la primera vez y se van agregand
 si el flujo de preguntas cambia en el futuro — no hay que tocar la Sheet a mano.
 
 Para exportar a CSV: `Archivo → Descargar → Valores separados por comas (.csv)`.
+
+---
+
+## 7. Analítica (dashboard)
+
+Además de la app de entrevistas, el repo incluye `apps/analytics-dashboard`:
+un panel de solo lectura que consume `TU_URL/exec?action=analytics` y muestra
+hipótesis ganadora por encuesta, resultados globales, ranking de hipótesis y
+un wordcloud.
+
+- Se despliega automáticamente junto a la app de entrevistas, en
+  `https://TU_USUARIO.github.io/TU_REPO/dashboard/`.
+- El endpoint `action=analytics` ya está incluido en `Code.gs`. Si editas
+  `Code.gs` (por ejemplo para agregar este endpoint por primera vez), recuerda
+  crear una **nueva implementación** como se explica en el paso 1 — de lo
+  contrario la URL `/exec` sigue sirviendo la versión anterior del script.
+- Para ver el **wordcloud** por hipótesis ganadora, agrega manualmente una
+  columna llamada `key_terms` en la pestaña `Interviews`, con los términos
+  clave de esa entrevista separados por comas (por ejemplo: `estrés, antojo,
+  culpa, media mañana`). Es opcional: si la columna no existe, el dashboard
+  simplemente muestra esa sección vacía.

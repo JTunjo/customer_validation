@@ -24,23 +24,42 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: apps/interview-app/package-lock.json
+          cache-dependency-path: |
+            apps/interview-app/package-lock.json
+            apps/analytics-dashboard/package-lock.json
 
-      - name: Install dependencies
+      - name: Install dependencies (interview-app)
         working-directory: apps/interview-app
         run: npm ci
 
-      - name: Build
+      - name: Build (interview-app)
         working-directory: apps/interview-app
         run: npm run build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
 
+      - name: Install dependencies (analytics-dashboard)
+        working-directory: apps/analytics-dashboard
+        run: npm ci
+
+      - name: Build (analytics-dashboard)
+        working-directory: apps/analytics-dashboard
+        run: npm run build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/dashboard/
+
+      - name: Combine sites
+        run: |
+          mkdir -p _site
+          cp -r apps/interview-app/dist/. _site/
+          mkdir -p _site/dashboard
+          cp -r apps/analytics-dashboard/dist/. _site/dashboard/
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/interview-app/dist
+          path: _site
 
   deploy:
     needs: build

@@ -6,6 +6,7 @@
  *  - POST { action: "start", meta }   -> devuelve un interviewId nuevo
  *  - POST { action: "save",  interview } -> escribe UNA fila plana en la hoja "Interviews"
  *  - GET  ?action=health              -> responde "OK" (health check)
+ *  - GET  ?action=analytics           -> devuelve JSON con la analítica agregada
  *
  * CONFIGURACIÓN (hacer una sola vez)
  *  1. Crea una Google Sheet nueva (o usa una existente).
@@ -15,6 +16,7 @@
  *       - Ejecutar como: Yo
  *       - Quién tiene acceso: Cualquier usuario
  *  5. Copia la URL /exec resultante y pégala en apps/interview-app/src/lib/config.js
+ *     y en apps/analytics-dashboard/src/lib/config.js
  */
 
 const SHEET_ID = "1wamHIKNCYcHGxmBtTo7p2uhbGBPi_G2fCqYX8KEJtk8";
@@ -29,6 +31,9 @@ function doGet(e) {
   const action = e?.parameter?.action;
   if (action === "health") {
     return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  }
+  if (action === "analytics") {
+    return jsonResponse(getAnalytics());
   }
   return ContentService.createTextOutput("Velvet Greens Customer Discovery API").setMimeType(
     ContentService.MimeType.TEXT
@@ -138,6 +143,196 @@ function getOrCreateSheet(name) {
     sheet = ss.insertSheet(name);
   }
   return sheet;
+}
+
+// ---------------------------------------------------------------------------
+// Analítica
+// ---------------------------------------------------------------------------
+// Metadata duplicada de apps/interview-app/src/data/flow.js (Apps Script no
+// puede importar ese archivo). Si el flujo de preguntas/tarjetas cambia allá,
+// actualizar también aquí.
+
+const HYPOTHESES = {
+  tarjeta_1: { label: "Indulgencia consciente" },
+  tarjeta_2: { label: "Feel-good reset" },
+  tarjeta_3: { label: "Tu momento" },
+};
+const HYPOTHESIS_IDS = ["tarjeta_1", "tarjeta_2", "tarjeta_3"];
+const COMPARATIVE_QUESTIONS = [
+  { id: "c1", question: "¿Cuál te llamó primero la atención?" },
+  { id: "c2", question: "¿Cuál entendiste más rápido?" },
+  { id: "c3", question: "¿Cuál te genera más curiosidad?" },
+  { id: "c4", question: "¿Cuál probarías primero?" },
+  { id: "c5", question: "¿Cuál comprarías?" },
+  { id: "c6", question: "¿Cuál le contarías a un amigo?" },
+  { id: "c7", question: "¿Cuál te parece más creíble?" },
+  { id: "c8", question: "¿Hay alguna que te haya sonado demasiado buena para ser verdad?" },
+  { id: "c9", question: "Si solo una de estas tres ideas pudiera existir, ¿cuál te daría más tristeza que desapareciera?" },
+];
+const COMPARATIVE_COUNT = COMPARATIVE_QUESTIONS.length; // 9, denominador fijo del score
+const VALID_SCORE_THRESHOLD = 0.65;
+
+const STOPWORDS_ES = new Set(
+  (
+    "de la que el en y a los del se las por un para con no una su al lo como mas pero sus le ya o " +
+    "este si porque esta entre cuando muy sin sobre tambien me hasta hay donde quien desde todo nos " +
+    "durante todos uno les ni contra otros ese eso ante ellos e esto mi antes algunos que sí porque " +
+    "esa eso ellas nosotros vosotros mismo yo tu tú te ti tu mi mí es soy eres somos son fue fueron " +
+    "ser estar tener hacer mas más muy poco mucho tan tanto cada algo alguien nada nadie algún alguna " +
+    "algunos algunas cual cuales cuyo cuya cuyos cuyas etc"
+  ).split(/\s+/)
+);
+
+/**
+ * Endpoint principal de analítica: lee toda la hoja "Interviews" y devuelve
+ * un JSON ya listo para pintar el dashboard (apps/analytics-dashboard).
+ */
+function getAnalytics() {
+  const sheet = getOrCreateSheet(SHEET_NAME);
+  const rows = sheetToObjects_(sheet);
+  return computeAnalytics_(rows);
+}
+
+/**
+ * Convierte una hoja (fila 1 = headers) en un arreglo de objetos header->valor.
+ */
+function sheetToObjects_(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  const values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+  const headers = values[0];
+  return values.slice(1).map((row) => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      if (header) obj[header] = row[i];
+    });
+    return obj;
+  });
+}
+
+function computeAnalytics_(rows) {
+  const interviews = rows.map((row) => analyzeInterviewRow_(row));
+
+  const hypotheses = {};
+  HYPOTHESIS_IDS.forEach((hid) => {
+    const scores = interviews.map((iv) => iv.counts[hid] / COMPARATIVE_COUNT);
+    const validCount = scores.filter((s) => s >= VALID_SCORE_THRESHOLD).length;
+    hypotheses[hid] = {
+      label: HYPOTHESES[hid].label,
+      totalPoints: interviews.reduce((sum, iv) => sum + iv.counts[hid], 0),
+      meanScore: mean_(scores),
+      stdDev: stdDev_(scores),
+      pctValid: interviews.length ? (validCount / interviews.length) * 100 : 0,
+    };
+  });
+
+  const ranking = HYPOTHESIS_IDS.slice().sort((a, b) => {
+    if (hypotheses[b].pctValid !== hypotheses[a].pctValid) {
+      return hypotheses[b].pctValid - hypotheses[a].pctValid;
+    }
+    return hypotheses[b].meanScore - hypotheses[a].meanScore;
+  });
+
+  const perQuestion = COMPARATIVE_QUESTIONS.map((q) => {
+    const counts = { tarjeta_1: 0, tarjeta_2: 0, tarjeta_3: 0 };
+    rows.forEach((row) => {
+      const choice = row["C_" + q.id + "_eleccion"];
+      if (counts.hasOwnProperty(choice)) counts[choice] += 1;
+    });
+    return { id: q.id, question: q.question, counts };
+  });
+
+  const wordcloud = buildWordcloud_(rows, interviews);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    numInterviews: interviews.length,
+    interviews,
+    hypotheses,
+    maxPossiblePoints: COMPARATIVE_COUNT * interviews.length,
+    ranking,
+    perQuestion,
+    wordcloud,
+  };
+}
+
+/**
+ * Calcula, para UNA fila de la hoja, cuántas veces ganó cada hipótesis, el
+ * score de cada una y cuál fue la ganadora (empate -> tarjeta con # menor).
+ */
+function analyzeInterviewRow_(row) {
+  const counts = { tarjeta_1: 0, tarjeta_2: 0, tarjeta_3: 0 };
+  COMPARATIVE_QUESTIONS.forEach((q) => {
+    const choice = row["C_" + q.id + "_eleccion"];
+    if (counts.hasOwnProperty(choice)) counts[choice] += 1;
+  });
+
+  let winner = HYPOTHESIS_IDS[0];
+  HYPOTHESIS_IDS.forEach((hid) => {
+    if (counts[hid] > counts[winner]) winner = hid;
+  });
+
+  return {
+    interviewId: row["InterviewID"] || "",
+    entrevistador: row["Entrevistador"] || "",
+    ciudad: row["Ciudad"] || "",
+    fecha: row["FechaInicio"] || "",
+    counts,
+    winner,
+    score: counts[winner] / COMPARATIVE_COUNT,
+  };
+}
+
+/**
+ * Agrupa las filas por hipótesis ganadora y cuenta frecuencia de términos en
+ * la columna manual "key_terms" (separados por coma/salto de línea), sin
+ * stopwords. Si la columna no existe todavía, devuelve listas vacías.
+ */
+function buildWordcloud_(rows, interviews) {
+  const wordcloud = {};
+  HYPOTHESIS_IDS.forEach((hid) => (wordcloud[hid] = {}));
+
+  rows.forEach((row, i) => {
+    const raw = row["key_terms"];
+    if (!raw) return;
+    const winner = interviews[i].winner;
+    tokenizeKeyTerms_(raw).forEach((term) => {
+      wordcloud[winner][term] = (wordcloud[winner][term] || 0) + 1;
+    });
+  });
+
+  const result = {};
+  HYPOTHESIS_IDS.forEach((hid) => {
+    result[hid] = Object.keys(wordcloud[hid])
+      .map((term) => ({ term, count: wordcloud[hid][term] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 40);
+  });
+  return result;
+}
+
+function tokenizeKeyTerms_(raw) {
+  return String(raw)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita acentos
+    .split(/[,;\n]+/)
+    .map((t) => t.replace(/[^a-z0-9\s-]/g, "").trim())
+    .filter((t) => t.length > 1 && !STOPWORDS_ES.has(t));
+}
+
+function mean_(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function stdDev_(values) {
+  if (!values.length) return 0;
+  const m = mean_(values);
+  const variance = mean_(values.map((v) => (v - m) * (v - m)));
+  return Math.sqrt(variance);
 }
 
 // ---------------------------------------------------------------------------
