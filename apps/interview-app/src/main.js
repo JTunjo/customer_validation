@@ -165,6 +165,7 @@ function renderQuestionStep(step) {
       )}</textarea>
 
       <div class="actions">
+        ${backButtonHTML()}
         <div class="kbd-hint">Enter para continuar · Shift+Enter para salto de línea</div>
         <button type="button" id="next-btn" class="btn btn-primary">Siguiente</button>
       </div>
@@ -179,6 +180,7 @@ function renderQuestionStep(step) {
   });
 
   document.getElementById("next-btn").addEventListener("click", () => advance());
+  bindBackButton();
   bindEnterToAdvance(textarea);
 }
 
@@ -195,6 +197,7 @@ function renderCardStep(step) {
       </div>
 
       <div class="actions actions-center">
+        ${backButtonHTML()}
         <button type="button" id="next-btn" class="btn btn-primary btn-wide">
           ${cardIndexInSet === CARDS.length - 1 ? "Continuar" : "Siguiente"}
         </button>
@@ -203,6 +206,7 @@ function renderCardStep(step) {
     { showProgress: true, showTimer: true }
   );
   document.getElementById("next-btn").addEventListener("click", () => advance());
+  bindBackButton();
   bindEnterToAdvance(null);
 }
 
@@ -239,6 +243,7 @@ function renderComparativeStep(step, isLast) {
       </label>
 
       <div class="actions">
+        ${backButtonHTML()}
         <div class="kbd-hint">Enter para continuar · Shift+Enter para salto de línea</div>
         <button type="button" id="next-btn" class="btn btn-primary" disabled>
           ${isLast ? "Guardar entrevista" : "Siguiente"}
@@ -248,6 +253,7 @@ function renderComparativeStep(step, isLast) {
     { showProgress: true, showTimer: true }
   );
 
+  bindBackButton();
   const nextBtn = document.getElementById("next-btn");
   const reasonBox = document.getElementById("reason");
 
@@ -297,6 +303,23 @@ function bindEnterToAdvance(textareaEl) {
 
 function advance() {
   goTo(state, state.currentIndex + 1);
+  render();
+}
+
+// Botón "Atrás": corrige un "Siguiente" presionado sin querer, en cualquier
+// pantalla (pregunta, tarjeta o comparativa). No se muestra en la primera
+// pregunta porque antes de eso está la pantalla de inicio (datos del entrevistador).
+function backButtonHTML() {
+  if (state.currentIndex <= 0) return "";
+  return `<button type="button" id="back-btn" class="btn btn-secondary">Atrás</button>`;
+}
+
+function bindBackButton() {
+  document.getElementById("back-btn")?.addEventListener("click", () => goBack());
+}
+
+function goBack() {
+  goTo(state, state.currentIndex - 1);
   render();
 }
 

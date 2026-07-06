@@ -75,21 +75,21 @@ export const CARDS = [
     label: "Tarjeta 1",
     title: "INDULGENCIA CONSCIENTE",
     subtitle: "Un snack delicioso para esos momentos en los que quieres darte un gusto sintiéndote bien con tu elección.",
-    body: "Clusters crocantes de chocolate y mucuna elaborados para quienes disfrutan los pequeños placeres del día sin renunciar al bienestar.\n\nUna experiencia que combina sabor, disfrute y una mejor forma de consentirte.",
+    body: "Un pequeño bocado de chocolate elaborado para quienes disfrutan los pequeños placeres del día sin renunciar al bienestar.\n\nUna experiencia que combina sabor, disfrute y una mejor forma de consentirte.",
   },
   {
     id: "tarjeta_2",
     label: "Tarjeta 2",
     title: "FEEL-GOOD RESET",
     subtitle: "Un pequeño momento que puede cambiar cómo continúa tu día.",
-    body: "Clusters crocantes de chocolate y mucuna pensados para acompañar esas pausas en las que decides reconectar contigo antes de seguir.\n\nUn pequeño reset que transforma un momento cotidiano en algo que vale la pena disfrutar.",
+    body: "Un pequeño bocado de chocolate pensado para acompañar esas pausas en las que decides reconectar contigo antes de seguir.\n\nUn pequeño reset que transforma un momento cotidiano en algo que vale la pena disfrutar.",
   },
   {
     id: "tarjeta_3",
     label: "Tarjeta 3",
     title: "TU MOMENTO",
     subtitle: "Porque también está bien regalarte un momento para ti.",
-    body: "Clusters crocantes de chocolate y mucuna creados para acompañar esas pequeñas pausas que normalmente dejamos pasar.\n\nUn recordatorio de que, a veces, volver a disfrutar un instante es exactamente lo que necesitábamos para seguir.",
+    body: "Un pequeño bocado de chocolate creado para acompañar esas pequeñas pausas que normalmente dejamos pasar.\n\nUn recordatorio de que, a veces, volver a disfrutar un instante es exactamente lo que necesitábamos para seguir.",
   },
 ];
 

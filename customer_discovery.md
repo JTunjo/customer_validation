@@ -154,7 +154,7 @@ Simplemente entregarla y dejar que el entrevistado la lea.
 
 ### Un snack delicioso para esos momentos en los que quieres darte un gusto sintiéndote bien con tu elección.
 
-Clusters crocantes de chocolate y mucuna elaborados para quienes disfrutan los pequeños placeres del día sin renunciar al bienestar.
+Un pequeño bocado de chocolate elaborado para quienes disfrutan los pequeños placeres del día sin renunciar al bienestar.
 
 Una experiencia que combina sabor, disfrute y una mejor forma de consentirte.
 
@@ -166,7 +166,7 @@ Una experiencia que combina sabor, disfrute y una mejor forma de consentirte.
 
 ### Un pequeño momento que puede cambiar cómo continúa tu día.
 
-Clusters crocantes de chocolate y mucuna pensados para acompañar esas pausas en las que decides reconectar contigo antes de seguir.
+Un pequeño bocado de chocolate pensado para acompañar esas pausas en las que decides reconectar contigo antes de seguir.
 
 Un pequeño reset que transforma un momento cotidiano en algo que vale la pena disfrutar.
 
@@ -178,7 +178,7 @@ Un pequeño reset que transforma un momento cotidiano en algo que vale la pena d
 
 ### Porque también está bien regalarte un momento para ti.
 
-Clusters crocantes de chocolate y mucuna creados para acompañar esas pequeñas pausas que normalmente dejamos pasar.
+Un pequeño bocado de chocolate creado para acompañar esas pequeñas pausas que normalmente dejamos pasar.
 
 Un recordatorio de que, a veces, volver a disfrutar un instante es exactamente lo que necesitábamos para seguir.
 
@@ -329,11 +329,14 @@ Botón
 
 Siguiente
 
+Botón
+
+Atrás (regresa a la pregunta anterior ya respondida, por si se presiona
+"Siguiente" sin querer).
+
 Nada más.
 
 Sin menú.
-
-Sin navegación.
 
 Sin barra lateral.
 
@@ -353,7 +356,11 @@ Botón
 
 Siguiente
 
-No permitir volver.
+Botón
+
+Atrás (permite corregir un "Siguiente" presionado sin querer; las tarjetas
+físicas ya están en manos del entrevistado, así que no hay riesgo de sesgo al
+poder retroceder en la pantalla).
 
 ---
 

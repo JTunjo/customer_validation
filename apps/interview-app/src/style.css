@@ -321,6 +321,16 @@ textarea:focus {
   opacity: 0.9;
 }
 
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
 .btn-block {
   width: 100%;
 }
