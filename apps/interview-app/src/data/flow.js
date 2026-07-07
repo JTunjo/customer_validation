@@ -68,6 +68,20 @@ export const QUESTION_STEPS = [
   },
 ];
 
+// ---------- PASO 2 — Validación de Hipótesis: guion antes de las tarjetas ----------
+// Verbatim que el entrevistador lee en voz alta al entrevistado, tal cual está
+// escrito, antes de mostrar la primera tarjeta.
+export const CARD_INTRO = {
+  id: "card_intro",
+  type: "intro",
+  title: "Antes de mostrar las tarjetas",
+  paragraphs: [
+    "A continuación, encontrarás 3 tarjetas que describen distintas posibles ideas de producto. Te las voy a mostrar una por una y te pido que las leas con tranquilidad, tomándote el tiempo que necesites.",
+    "Para las preguntas que siguen debes responder con lo que sientas de forma natural y espontánea; no hay respuestas correctas ni incorrectas.",
+    'Ten en cuenta que las tres ideas son igual de válidas, así que no te preocupes por elegir la que "debería" gustarte más — lo que más nos ayuda es tu reacción honesta.',
+  ],
+};
+
 // ---------- PASO 2 — Validación de Hipótesis: Tarjetas ----------
 export const CARDS = [
   {

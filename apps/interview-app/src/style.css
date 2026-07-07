@@ -209,6 +209,20 @@ textarea:focus {
   min-height: 140px;
 }
 
+/* ---------- Guion antes de tarjetas ---------- */
+.intro-text {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.intro-text p {
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+
 /* ---------- Tarjetas de hipótesis ---------- */
 .card {
   background: var(--surface);

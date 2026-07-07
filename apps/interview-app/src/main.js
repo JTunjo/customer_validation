@@ -1,5 +1,5 @@
 import "./style.css";
-import { QUESTION_STEPS, CARDS, COMPARATIVE_STEPS, CARD_OPTIONS } from "./data/flow.js";
+import { QUESTION_STEPS, CARD_INTRO, CARDS, COMPARATIVE_STEPS, CARD_OPTIONS } from "./data/flow.js";
 import { loadDraft, createNewDraft, saveDraft, clearDraft, setAnswer, setCardChoice, goTo } from "./lib/store.js";
 import { startInterview, saveInterview } from "./lib/api.js";
 
@@ -8,6 +8,7 @@ const app = document.getElementById("app");
 // Construimos la secuencia completa de pantallas de la entrevista.
 const STEPS = [
   ...QUESTION_STEPS,
+  CARD_INTRO,
   ...CARDS.map((c) => ({ id: c.id, type: "card", card: c })),
   ...COMPARATIVE_STEPS,
 ];
@@ -89,7 +90,7 @@ function renderSetup() {
 
     <form id="setup-form" class="form">
       <label class="field">
-        <span>Nombre entrevistador</span>
+        <span>Nombre</span>
         <input type="text" name="entrevistador" required autocomplete="off" />
       </label>
       <label class="field">
@@ -142,8 +143,33 @@ function renderStep() {
   const isLast = state.currentIndex === TOTAL_STEPS - 1;
 
   if (step.type === "question") return renderQuestionStep(step);
+  if (step.type === "intro") return renderIntroStep(step);
   if (step.type === "card") return renderCardStep(step);
   if (step.type === "choice" || step.type === "choice_with_none") return renderComparativeStep(step, isLast);
+}
+
+// ---------------------------------------------------------------------------
+// Pantalla previa a las tarjetas — guion que el entrevistador lee en voz alta
+// ---------------------------------------------------------------------------
+function renderIntroStep(step) {
+  renderShell(
+    `
+      <h2 class="question">${esc(step.title)}</h2>
+
+      <div class="intro-text">
+        ${step.paragraphs.map((p) => `<p>${esc(p)}</p>`).join("")}
+      </div>
+
+      <div class="actions actions-center">
+        ${backButtonHTML()}
+        <button type="button" id="next-btn" class="btn btn-primary btn-wide">Continuar</button>
+      </div>
+    `,
+    { showProgress: true, showTimer: true }
+  );
+  document.getElementById("next-btn").addEventListener("click", () => advance());
+  bindBackButton();
+  bindEnterToAdvance(null);
 }
 
 function renderQuestionStep(step) {
