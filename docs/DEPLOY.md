@@ -142,3 +142,7 @@ un wordcloud.
   clave de esa entrevista separados por comas (por ejemplo: `estrés, antojo,
   culpa, media mañana`). Es opcional: si la columna no existe, el dashboard
   simplemente muestra esa sección vacía.
+- Para filtrar **toda** la analítica por cómo se hizo la entrevista, agrega
+  manualmente una columna llamada `method` en `Interviews` (por ejemplo con
+  los valores `Presencial` / `Virtual`). El dashboard muestra un botón por
+  cada valor distinto que encuentre; también es opcional.

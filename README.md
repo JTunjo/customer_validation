@@ -64,7 +64,9 @@ app se recupera exactamente donde se quedó.
 encuesta, resultados globales por hipótesis, ranking (score promedio,
 desviación estándar y % de encuestas válidas ≥65%), la matriz de resultados
 por pregunta y un wordcloud por hipótesis ganadora (a partir de la columna
-manual `key_terms` en la hoja `Interviews`). Ver `docs/DEPLOY.md` sección 7.
+manual `key_terms` en la hoja `Interviews`). Se puede filtrar toda la
+analítica por la columna manual `method` (ej. Presencial/Virtual). Ver
+`docs/DEPLOY.md` sección 7.
 
 ## Próximos pasos
 
