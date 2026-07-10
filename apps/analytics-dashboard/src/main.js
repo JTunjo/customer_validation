@@ -5,6 +5,11 @@ const app = document.getElementById("app");
 
 const HYPOTHESIS_IDS = ["tarjeta_1", "tarjeta_2", "tarjeta_3"];
 
+// Filtro global por la columna manual "method" (ej. Presencial/Virtual).
+// Afecta a toda la analítica porque se le pasa al backend, que recalcula
+// todo (hipótesis, ranking, matriz, wordcloud) solo con las filas filtradas.
+let currentMethod = "";
+
 function esc(str) {
   const div = document.createElement("div");
   div.textContent = str ?? "";
@@ -25,7 +30,7 @@ function formatDate(iso) {
 async function load() {
   renderShell(`<p class="hint">Cargando analítica…</p>`);
   try {
-    const data = await fetchAnalytics();
+    const data = await fetchAnalytics(currentMethod);
     render(data);
   } catch (err) {
     renderShell(`<p class="empty">No se pudo cargar la analítica: ${esc(err.message)}</p>`);
@@ -46,6 +51,12 @@ function renderShell(bodyHTML) {
     </div>
   `;
   document.getElementById("refresh-btn")?.addEventListener("click", load);
+  document.querySelectorAll(".filter-pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentMethod = btn.dataset.method || "";
+      load();
+    });
+  });
 }
 
 function render(data) {
@@ -57,15 +68,39 @@ function render(data) {
     renderWordcloudSection(data),
   ].join("");
 
+  const countLabel = data.selectedMethod
+    ? `${data.numInterviews} de ${data.numInterviewsUnfiltered} entrevista${
+        data.numInterviewsUnfiltered === 1 ? "" : "s"
+      } · filtrado por "${esc(data.selectedMethod)}"`
+    : `${data.numInterviews} entrevista${data.numInterviews === 1 ? "" : "s"} registrada${
+        data.numInterviews === 1 ? "" : "s"
+      }`;
+
   renderShell(`
-    <p class="subtitle">
-      ${data.numInterviews} entrevista${data.numInterviews === 1 ? "" : "s"} registrada${
-    data.numInterviews === 1 ? "" : "s"
-  }
-      · actualizado ${formatDate(data.generatedAt)}
-    </p>
+    ${renderFilterBar(data)}
+    <p class="subtitle">${countLabel} · actualizado ${formatDate(data.generatedAt)}</p>
     ${sections}
   `);
+}
+
+// ---------------------------------------------------------------------------
+// Filtro global por método (columna manual "method" en Interviews)
+// ---------------------------------------------------------------------------
+function renderFilterBar(data) {
+  if (!data.availableMethods || !data.availableMethods.length) return "";
+
+  const pills = [{ value: "", label: `Todos (${data.numInterviewsUnfiltered})` }, ...data.availableMethods.map((m) => ({ value: m, label: m }))];
+
+  const buttons = pills
+    .map(
+      (p) => `
+      <button type="button" class="filter-pill ${data.selectedMethod === p.value ? "is-active" : ""}" data-method="${esc(
+        p.value
+      )}">${esc(p.label)}</button>`
+    )
+    .join("");
+
+  return `<div class="filter-bar">${buttons}</div>`;
 }
 
 // ---------------------------------------------------------------------------

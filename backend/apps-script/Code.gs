@@ -33,7 +33,7 @@ function doGet(e) {
     return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
   }
   if (action === "analytics") {
-    return jsonResponse(getAnalytics());
+    return jsonResponse(getAnalytics(e?.parameter?.method || ""));
   }
   return ContentService.createTextOutput("Velvet Greens Customer Discovery API").setMimeType(
     ContentService.MimeType.TEXT
@@ -191,11 +191,36 @@ const STOPWORDS_ES = new Set(
 /**
  * Endpoint principal de analítica: lee toda la hoja "Interviews" y devuelve
  * un JSON ya listo para pintar el dashboard (apps/analytics-dashboard).
+ *
+ * `methodFilter` (opcional) filtra las filas por la columna manual "method"
+ * (ej. "Presencial", "Virtual" — la agrega y diligencia el usuario en la
+ * Sheet, la app no la escribe). Vacío o ausente = sin filtro, todas las filas.
  */
-function getAnalytics() {
+function getAnalytics(methodFilter) {
   const sheet = getOrCreateSheet(SHEET_NAME);
-  const rows = sheetToObjects_(sheet);
-  return computeAnalytics_(rows);
+  const allRows = sheetToObjects_(sheet);
+
+  const availableMethods = uniqueSorted_(allRows.map((row) => String(row["method"] || "").trim()).filter(Boolean));
+
+  const rows = methodFilter ? allRows.filter((row) => String(row["method"] || "").trim() === methodFilter) : allRows;
+
+  const analytics = computeAnalytics_(rows);
+  analytics.availableMethods = availableMethods;
+  analytics.selectedMethod = methodFilter || "";
+  analytics.numInterviewsUnfiltered = allRows.length;
+  return analytics;
+}
+
+function uniqueSorted_(values) {
+  const seen = {};
+  const result = [];
+  values.forEach((v) => {
+    if (!seen[v]) {
+      seen[v] = true;
+      result.push(v);
+    }
+  });
+  return result.sort();
 }
 
 /**
