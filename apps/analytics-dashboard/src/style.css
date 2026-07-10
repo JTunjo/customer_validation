@@ -231,9 +231,8 @@ tr:last-child td {
 }
 
 .wordcloud-term {
-  color: var(--text);
-  font-weight: 650;
   line-height: 1;
+  /* color y font-weight se calculan en JS según frecuencia (ver wordcloudColor) */
 }
 
 /* ---------- Responsive ---------- */

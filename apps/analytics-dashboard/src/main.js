@@ -103,7 +103,11 @@ function renderInterviewsSection(data) {
     </div>`
     : `<p class="empty">Todavía no hay entrevistas guardadas.</p>`;
 
-  return section("Hipótesis por encuesta", "Hipótesis ganadora y score (veces elegida / 9) de cada entrevista.", body);
+  return section(
+    "Hipótesis por encuesta",
+    'Hipótesis ganadora y score (veces elegida / 8 preguntas comparativas positivas) de cada entrevista. No cuenta la pregunta "¿demasiado buena para ser verdad?" (c8), que mide desconfianza, no preferencia.',
+    body
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +116,8 @@ function renderInterviewsSection(data) {
 function renderGlobalResultsSection(data) {
   const cards = HYPOTHESIS_IDS.map((hid) => {
     const h = data.hypotheses[hid];
-    const width = data.maxPossiblePoints > 0 ? (h.totalPoints / data.maxPossiblePoints) * 100 : 0;
+    const rawWidth = data.maxPossiblePoints > 0 ? (h.totalPoints / data.maxPossiblePoints) * 100 : 0;
+    const width = Math.min(100, Math.max(0, rawWidth));
     return `
       <div class="card hypo-card">
         <h3>${esc(h.label)}</h3>
@@ -123,7 +128,7 @@ function renderGlobalResultsSection(data) {
 
   return section(
     "Resultados globales",
-    `Suma de veces elegida cada hipótesis en las 9 preguntas comparativas, de todas las entrevistas. Máximo teórico combinado: ${data.maxPossiblePoints} puntos (9 × número de encuestas).`,
+    `Suma de veces elegida cada hipótesis en las 8 preguntas comparativas positivas, menos las veces que fue señalada como "demasiado buena para ser verdad" (pregunta c8). Máximo teórico: ${data.maxPossiblePoints} puntos (8 × número de encuestas, si nadie marca ninguna tarjeta en esa pregunta).`,
     `<div class="hypo-grid">${cards}</div>`
   );
 }
@@ -164,7 +169,7 @@ function renderRankingSection(data) {
 
   return section(
     "Ranking de hipótesis",
-    "Ordenado por % de encuestas donde la hipótesis alcanzó al menos 65% de score; en empate, por score promedio.",
+    'Ordenado por % de encuestas donde la hipótesis alcanzó al menos 65% de score (sobre las 8 preguntas positivas, sin contar c8); en empate, por score promedio.',
     body
   );
 }
@@ -217,8 +222,13 @@ function renderWordcloudSection(data) {
       ? `<div class="wordcloud-terms">
           ${terms
             .map((t) => {
-              const size = 0.85 + (t.count / maxCount) * 1.6; // rem
-              return `<span class="wordcloud-term" style="font-size:${size.toFixed(2)}rem">${esc(t.term)}</span>`;
+              const ratio = t.count / maxCount; // 0 (menos frecuente) .. 1 (más frecuente)
+              const size = 0.8 + ratio * 1.7; // rem
+              const color = wordcloudColor(ratio);
+              const weight = Math.round(500 + ratio * 300);
+              return `<span class="wordcloud-term" style="font-size:${size.toFixed(2)}rem;color:${color};font-weight:${weight}">${esc(
+                t.term
+              )}</span>`;
             })
             .join("")}
         </div>`
@@ -232,6 +242,16 @@ function renderWordcloudSection(data) {
     "Términos más frecuentes (columna manual key_terms) entre las entrevistas donde ganó cada hipótesis, sin stopwords.",
     `<div class="wordcloud-grid">${columns}</div>`
   );
+}
+
+// Interpola entre un gris claro (términos poco frecuentes, discretos) y el
+// color de texto principal casi negro (términos muy frecuentes, que deben
+// resaltar de inmediato), para reforzar la jerarquía visual del wordcloud.
+function wordcloudColor(ratio) {
+  const light = [180, 178, 172]; // gris claro
+  const dark = [23, 23, 21]; // --text
+  const rgb = light.map((c, i) => Math.round(c + (dark[i] - c) * ratio));
+  return `rgb(${rgb.join(",")})`;
 }
 
 // ---------------------------------------------------------------------------

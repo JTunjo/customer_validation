@@ -169,7 +169,12 @@ const COMPARATIVE_QUESTIONS = [
   { id: "c8", question: "¿Hay alguna que te haya sonado demasiado buena para ser verdad?" },
   { id: "c9", question: "Si solo una de estas tres ideas pudiera existir, ¿cuál te daría más tristeza que desapareciera?" },
 ];
-const COMPARATIVE_COUNT = COMPARATIVE_QUESTIONS.length; // 9, denominador fijo del score
+
+// c8 mide un atributo negativo (desconfianza), así que NO suma como las demás:
+// se excluye del score por encuesta / ranking, y se resta en los puntos globales.
+const NEGATIVE_QUESTION_ID = "c8";
+const POSITIVE_QUESTION_IDS = COMPARATIVE_QUESTIONS.filter((q) => q.id !== NEGATIVE_QUESTION_ID).map((q) => q.id);
+const POSITIVE_COMPARATIVE_COUNT = POSITIVE_QUESTION_IDS.length; // 8, denominador del score
 const VALID_SCORE_THRESHOLD = 0.65;
 
 const STOPWORDS_ES = new Set(
@@ -215,13 +220,22 @@ function sheetToObjects_(sheet) {
 function computeAnalytics_(rows) {
   const interviews = rows.map((row) => analyzeInterviewRow_(row));
 
+  // c8 ("demasiado buena para ser verdad") resta puntos a la hipótesis
+  // señalada, en vez de sumar como las demás preguntas comparativas.
+  const negativeCounts = { tarjeta_1: 0, tarjeta_2: 0, tarjeta_3: 0 };
+  rows.forEach((row) => {
+    const choice = row["C_" + NEGATIVE_QUESTION_ID + "_eleccion"];
+    if (negativeCounts.hasOwnProperty(choice)) negativeCounts[choice] += 1;
+  });
+
   const hypotheses = {};
   HYPOTHESIS_IDS.forEach((hid) => {
-    const scores = interviews.map((iv) => iv.counts[hid] / COMPARATIVE_COUNT);
+    const scores = interviews.map((iv) => iv.counts[hid] / POSITIVE_COMPARATIVE_COUNT);
     const validCount = scores.filter((s) => s >= VALID_SCORE_THRESHOLD).length;
+    const positivePoints = interviews.reduce((sum, iv) => sum + iv.counts[hid], 0);
     hypotheses[hid] = {
       label: HYPOTHESES[hid].label,
-      totalPoints: interviews.reduce((sum, iv) => sum + iv.counts[hid], 0),
+      totalPoints: positivePoints - negativeCounts[hid],
       meanScore: mean_(scores),
       stdDev: stdDev_(scores),
       pctValid: interviews.length ? (validCount / interviews.length) * 100 : 0,
@@ -244,14 +258,18 @@ function computeAnalytics_(rows) {
     return { id: q.id, question: q.question, counts };
   });
 
-  const wordcloud = buildWordcloud_(rows, interviews);
+  // El wordcloud sigue agrupando por la hipótesis ganadora "clásica" (las 9
+  // preguntas, c8 incluida como positiva) — a diferencia del score de arriba,
+  // aquí se mantiene el criterio anterior a propósito.
+  const legacyWinners = rows.map((row) => legacyWinnerForRow_(row));
+  const wordcloud = buildWordcloud_(rows, legacyWinners);
 
   return {
     generatedAt: new Date().toISOString(),
     numInterviews: interviews.length,
     interviews,
     hypotheses,
-    maxPossiblePoints: COMPARATIVE_COUNT * interviews.length,
+    maxPossiblePoints: POSITIVE_COMPARATIVE_COUNT * interviews.length,
     ranking,
     perQuestion,
     wordcloud,
@@ -261,11 +279,13 @@ function computeAnalytics_(rows) {
 /**
  * Calcula, para UNA fila de la hoja, cuántas veces ganó cada hipótesis, el
  * score de cada una y cuál fue la ganadora (empate -> tarjeta con # menor).
+ * Ignora por completo c8 (no suma ni resta): mide únicamente las 8 preguntas
+ * comparativas positivas.
  */
 function analyzeInterviewRow_(row) {
   const counts = { tarjeta_1: 0, tarjeta_2: 0, tarjeta_3: 0 };
-  COMPARATIVE_QUESTIONS.forEach((q) => {
-    const choice = row["C_" + q.id + "_eleccion"];
+  POSITIVE_QUESTION_IDS.forEach((qid) => {
+    const choice = row["C_" + qid + "_eleccion"];
     if (counts.hasOwnProperty(choice)) counts[choice] += 1;
   });
 
@@ -281,23 +301,41 @@ function analyzeInterviewRow_(row) {
     fecha: row["FechaInicio"] || "",
     counts,
     winner,
-    score: counts[winner] / COMPARATIVE_COUNT,
+    score: counts[winner] / POSITIVE_COMPARATIVE_COUNT,
   };
 }
 
 /**
- * Agrupa las filas por hipótesis ganadora y cuenta frecuencia de términos en
- * la columna manual "key_terms" (separados por coma/salto de línea), sin
- * stopwords. Si la columna no existe todavía, devuelve listas vacías.
+ * Ganadora "clásica" de una fila: las 9 preguntas comparativas, contando c8
+ * como positiva igual que las demás. Se usa solo para agrupar el wordcloud.
  */
-function buildWordcloud_(rows, interviews) {
+function legacyWinnerForRow_(row) {
+  const counts = { tarjeta_1: 0, tarjeta_2: 0, tarjeta_3: 0 };
+  COMPARATIVE_QUESTIONS.forEach((q) => {
+    const choice = row["C_" + q.id + "_eleccion"];
+    if (counts.hasOwnProperty(choice)) counts[choice] += 1;
+  });
+  let winner = HYPOTHESIS_IDS[0];
+  HYPOTHESIS_IDS.forEach((hid) => {
+    if (counts[hid] > counts[winner]) winner = hid;
+  });
+  return winner;
+}
+
+/**
+ * Agrupa las filas por hipótesis ganadora (recibida en `winners`, paralelo a
+ * `rows`) y cuenta frecuencia de términos en la columna manual "key_terms"
+ * (separados por coma/salto de línea), sin stopwords. Si la columna no existe
+ * todavía, devuelve listas vacías.
+ */
+function buildWordcloud_(rows, winners) {
   const wordcloud = {};
   HYPOTHESIS_IDS.forEach((hid) => (wordcloud[hid] = {}));
 
   rows.forEach((row, i) => {
     const raw = row["key_terms"];
     if (!raw) return;
-    const winner = interviews[i].winner;
+    const winner = winners[i];
     tokenizeKeyTerms_(raw).forEach((term) => {
       wordcloud[winner][term] = (wordcloud[winner][term] || 0) + 1;
     });
